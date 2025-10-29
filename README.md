@@ -10,9 +10,9 @@
 
 ```
 SNSWorkFlow/
-├── index copy.html              # ホームページ（事業情報ソース）
-├── index copy 2.html            # AI画像生成ツール（マジカルナノバナナ∞）
-├── index copy 3.html            # 画像加工+アップロード+CSV作成
+├── index.html                   # ホームページ（事業情報ソース）
+├── magicalnanobanana.html       # AI画像生成ツール（マジカルナノバナナ∞）
+├── imagegenerator.html          # 画像加工+アップロード+CSV作成
 ├── src/
 │   ├── analyze-homepage.js      # ホームページ解析スクリプト
 │   └── generate-calendar.js     # カレンダー生成スクリプト
@@ -97,14 +97,14 @@ npm run generate-calendar
 
 #### ステップ3: AI画像生成（手動）
 
-1. ブラウザで `index copy 2.html` を開く
+1. ブラウザで `magicalnanobanana.html` を開く
 2. パスワード: `IFjuku19841121`
 3. 画像生成タブでプロンプトを入力
 4. 画像を生成してZIPでダウンロード
 
 #### ステップ4-6: 画像加工→アップロード→CSV作成（手動）
 
-1. ブラウザで `index copy 3.html` を開く
+1. ブラウザで `imagegenerator.html` を開く
 2. 画像生成タブで文字を追加
 3. ファイルアップロードタブでサーバーにアップロード
 4. CSV作成タブでPubler用CSVを生成
@@ -120,7 +120,7 @@ npm run generate-calendar
 
 2. 自動実行タイミング：
    - 毎月1日 午前9時（JST）
-   - `index copy.html` が更新されたとき
+   - `index.html` が更新されたとき
    - 手動実行（GitHub Actions UI）
 
 ### 手動実行
@@ -145,16 +145,16 @@ npm run generate-calendar
    ↓ generate-calendar.js → calendar.csv
 
 3. AI画像生成 (手動)
-   ↓ index copy 2.html → 画像ZIP
+   ↓ magicalnanobanana.html → 画像ZIP
 
 4. 画像に文字追加 (手動)
-   ↓ index copy 3.html → 加工画像ZIP
+   ↓ imagegenerator.html → 加工画像ZIP
 
 5. サーバーアップロード (手動)
-   ↓ index copy 3.html → images.if-juku.net
+   ↓ imagegenerator.html → images.if-juku.net
 
 6. Publer CSV作成 (手動)
-   ↓ index copy 3.html → 一括投稿データ.csv
+   ↓ imagegenerator.html → 一括投稿データ.csv
 
 7. Publerにインポート (手動)
    ↓ Publer → Instagram投稿
@@ -188,7 +188,7 @@ npm run generate-calendar
 
 ## 使用している既存ツール
 
-### index copy 2.html - マジカルナノバナナ∞
+### magicalnanobanana.html - マジカルナノバナナ∞
 
 **機能**:
 - 画像生成（Gemini API）
@@ -200,7 +200,7 @@ npm run generate-calendar
 - 一括生成機能
 - ZIPでダウンロード
 
-### index copy 3.html - Instagram画像ジェネレーター
+### imagegenerator.html - Instagram画像ジェネレーター
 
 **機能**:
 1. 画像生成タブ: 画像に文字をオーバーレイ（4:5形式）
@@ -309,7 +309,7 @@ echo $OPENAI_API_KEY
 
 ### 投稿頻度を変更
 
-`index copy 3.html` のCSV作成タブで調整：
+`imagegenerator.html` のCSV作成タブで調整：
 - 現在: 毎日18:00
 - カスタマイズ可能
 

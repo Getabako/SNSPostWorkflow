@@ -8,13 +8,13 @@
 2. 投稿カレンダー生成（AIで30日分のカルーセル投稿を生成）
    ↓ (generate-calendar.js)
 3. AI画像生成（プロンプトから画像を生成）
-   ↓ (index copy 2.html - マジカルナノバナナ∞)
+   ↓ (magicalnanobanana.html - マジカルナノバナナ∞)
 4. 画像に文字を追加（タイトル・コンテンツをオーバーレイ）
-   ↓ (index copy 3.html - Instagram画像ジェネレーター)
+   ↓ (imagegenerator.html - Instagram画像ジェネレーター)
 5. サーバーにアップロード
-   ↓ (index copy 3.html - ファイルアップロード)
+   ↓ (imagegenerator.html - ファイルアップロード)
 6. Publer用CSV作成
-   ↓ (index copy 3.html - CSV作成)
+   ↓ (imagegenerator.html - CSV作成)
 7. Publerにインポートして投稿
 
 ```
@@ -61,9 +61,9 @@ npm run generate-calendar
 
 ### ステップ3: AI画像生成
 
-**ツール**: `index copy 2.html` (マジカルナノバナナ∞)
+**ツール**: `magicalnanobanana.html` (マジカルナノバナナ∞)
 
-1. ブラウザで `index copy 2.html` を開く
+1. ブラウザで `magicalnanobanana.html` を開く
 2. パスワードを入力してログイン
 3. **画像生成タブ**を選択
 4. カレンダーCSVから画像プロンプト（列1, 4, 7, 10）をコピー
@@ -80,9 +80,9 @@ npm run generate-calendar
 
 ### ステップ4: 画像に文字を追加
 
-**ツール**: `index copy 3.html` (Instagram画像ジェネレーター)
+**ツール**: `imagegenerator.html` (Instagram画像ジェネレーター)
 
-1. ブラウザで `index copy 3.html` を開く
+1. ブラウザで `imagegenerator.html` を開く
 2. **画像生成タブ**を選択
 3. 画像ファイルをアップロード（ステップ3で生成した画像）
 4. **タイトルテキスト入力**:
@@ -100,7 +100,7 @@ npm run generate-calendar
 
 ### ステップ5: サーバーにアップロード
 
-**ツール**: `index copy 3.html` - **ファイルアップロードタブ**
+**ツール**: `imagegenerator.html` - **ファイルアップロードタブ**
 
 1. パスワードを入力して「パスワード確認」
 2. ZIPを解凍したフォルダをドラッグ&ドロップ
@@ -115,7 +115,7 @@ npm run generate-calendar
 
 ### ステップ6: Publer用CSV作成
 
-**ツール**: `index copy 3.html` - **CSV作成タブ**
+**ツール**: `imagegenerator.html` - **CSV作成タブ**
 
 1. **フォルダ名**: `iftech_post_2025_10`（ステップ5でアップロードしたフォルダ名）
 2. **画像の枚数**: カルーセル用画像の枚数（4の倍数）
@@ -156,9 +156,9 @@ Date,Text,Link(s),Media URL(s)
 
 ```
 SNSWorkFlow/
-├── index copy.html              # ホームページ（事業情報ソース）
-├── index copy 2.html            # AI画像生成ツール
-├── index copy 3.html            # 画像加工+アップロード+CSV作成
+├── index.html                   # ホームページ（事業情報ソース）
+├── magicalnanobanana.html       # AI画像生成ツール
+├── imagegenerator.html          # 画像加工+アップロード+CSV作成
 ├── src/
 │   ├── analyze-homepage.js      # ホームページ解析
 │   ├── generate-calendar.js     # カレンダー生成
