@@ -78,31 +78,57 @@ function loadImageRule(ruleName) {
 }
 
 /**
+ * 全てのキャラクター設定を読み込み
+ */
+function loadAllCharacters() {
+  const characterDir = join(__dirname, '..', 'character');
+  if (!existsSync(characterDir)) return [];
+
+  const files = readdirSync(characterDir).filter(file => file.endsWith('.csv'));
+  const characters = [];
+
+  for (const file of files) {
+    const characterName = file.replace('.csv', '');
+    try {
+      const character = loadCharacter(characterName);
+      characters.push(character);
+    } catch (error) {
+      console.warn(`⚠️  ${characterName}の読み込みをスキップ:`, error.message);
+    }
+  }
+
+  return characters;
+}
+
+/**
+ * 全ての画像一貫性ルールを読み込み
+ */
+function loadAllImageRules() {
+  const imageruleDir = join(__dirname, '..', 'imagerule');
+  if (!existsSync(imageruleDir)) return [];
+
+  const files = readdirSync(imageruleDir).filter(file => file.endsWith('.csv'));
+  const rules = [];
+
+  for (const file of files) {
+    const ruleName = file.replace('.csv', '');
+    try {
+      const rule = loadImageRule(ruleName);
+      rules.push(rule);
+    } catch (error) {
+      console.warn(`⚠️  ${ruleName}の読み込みをスキップ:`, error.message);
+    }
+  }
+
+  return rules;
+}
+
+/**
  * AIで投稿カレンダー（CSV）を生成
  */
 async function generateCalendar() {
   try {
     console.log('📅 Instagram投稿カレンダーを生成中...\n');
-
-    // コマンドライン引数またはデフォルト値
-    const args = process.argv.slice(2);
-    const characterName = args.find(arg => arg.startsWith('--character='))?.split('=')[1] || '塾長山﨑琢己';
-    const ruleName = args.find(arg => arg.startsWith('--rule='))?.split('=')[1] || 'iftech';
-
-    console.log(`📌 使用するキャラクター: ${characterName}`);
-    console.log(`📌 使用する一貫性ルール: ${ruleName}\n`);
-
-    // 利用可能な設定をリスト表示
-    const availableCharacters = listCharacters();
-    const availableRules = listImageRules();
-
-    if (availableCharacters.length > 0) {
-      console.log('✅ 利用可能なキャラクター:', availableCharacters.join(', '));
-    }
-    if (availableRules.length > 0) {
-      console.log('✅ 利用可能なルール:', availableRules.join(', '));
-    }
-    console.log();
 
     // APIキーの確認
     if (!process.env.GEMINI_API_KEY) {
@@ -116,17 +142,60 @@ async function generateCalendar() {
     }
     const businessSummary = readFileSync(businessSummaryPath, 'utf-8');
 
-    // キャラクター設定と一貫性ルールの読み込み
-    const character = loadCharacter(characterName);
-    const imageRule = loadImageRule(ruleName);
+    // 全てのキャラクター設定と一貫性ルールの読み込み
+    const characters = loadAllCharacters();
+    const imageRules = loadAllImageRules();
 
     console.log('✅ 事業情報を読み込みました');
-    console.log('✅ キャラクター設定を読み込みました');
-    console.log('✅ 一貫性ルールを読み込みました\n');
+    console.log(`✅ キャラクター設定を読み込みました（${characters.length}人）`);
+    console.log(`✅ 一貫性ルールを読み込みました（${imageRules.length}個）\n`);
+
+    if (characters.length === 0) {
+      throw new Error('キャラクター設定が見つかりません。characterフォルダにCSVファイルを配置してください。');
+    }
+
+    if (imageRules.length === 0) {
+      throw new Error('一貫性ルールが見つかりません。imageruleフォルダにCSVファイルを配置してください。');
+    }
+
+    // キャラクター情報を表示
+    console.log('👥 読み込んだキャラクター:');
+    characters.forEach(char => {
+      console.log(`   - ${char.name}`);
+    });
+
+    console.log('\n🎨 読み込んだ一貫性ルール:');
+    imageRules.forEach(rule => {
+      console.log(`   - ${rule.name}`);
+    });
+    console.log();
 
     // Gemini APIクライアントの初期化
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    // キャラクター情報をプロンプト用にフォーマット
+    const charactersSection = characters.map((char, idx) => `
+## キャラクター${idx + 1}: ${char.name}
+- 外見: ${char.appearance}
+- 髪: ${char.hair}
+- 目: ${char.eyes}
+- 顔: ${char.face}
+- 体型: ${char.body}
+- 服装: ${char.clothing}
+- 性格: ${char.personality}
+- 追加情報: ${char.additional}
+`).join('\n');
+
+    // 画像ルール情報をプロンプト用にフォーマット
+    const imageRulesSection = imageRules.map((rule, idx) => `
+## 一貫性ルール${idx + 1}: ${rule.name}
+- 場所: ${rule.location}
+- キャラクター: ${rule.characters}
+- 照明: ${rule.lighting}
+- スタイル: ${rule.style}
+- 追加情報: ${rule.additional}
+`).join('\n');
 
     // カレンダー生成用プロンプト
     const prompt = `
@@ -136,23 +205,12 @@ async function generateCalendar() {
 ${businessSummary}
 
 # キャラクター設定（登場人物の一貫性）
-名前: ${character.name}
-外見: ${character.appearance}
-髪: ${character.hair}
-目: ${character.eyes}
-顔: ${character.face}
-体型: ${character.body}
-服装: ${character.clothing}
-性格: ${character.personality}
-追加情報: ${character.additional}
+以下の${characters.length}人のキャラクターが利用可能です。投稿内容に応じて適切なキャラクターを選んで使用してください。複数人を1つの投稿に登場させることも可能です。
+${charactersSection}
 
 # 画像一貫性ルール
-名前: ${imageRule.name}
-場所: ${imageRule.location}
-キャラクター: ${imageRule.characters}
-照明: ${imageRule.lighting}
-スタイル: ${imageRule.style}
-追加情報: ${imageRule.additional}
+以下の${imageRules.length}個の一貫性ルールが利用可能です。投稿内容に応じて適切なルールを選んで使用してください。
+${imageRulesSection}
 
 # カルーセル投稿の構成
 各日の投稿は4枚の画像で構成されます：
@@ -178,11 +236,13 @@ M列: 投稿のテキスト+ハッシュタグ
 
 ## 画像説明（A,D,G,J列）の作成ルール
 - **必ず日本語で記述**
-- 上記の「キャラクター設定」と「画像一貫性ルール」を必ず反映
-- 人物が登場する場合は、キャラクター設定の外見・服装・性格を正確に描写
-- 場所・照明・スタイルは画像一貫性ルールに従う
+- 上記の「キャラクター設定」から適切なキャラクターを選んで登場させる（複数人も可）
+- 上記の「画像一貫性ルール」から投稿内容に適したルールを選んで適用
+- 人物が登場する場合は、選んだキャラクターの外見・服装・性格を正確に描写
+- 場所・照明・スタイルは選んだ一貫性ルールに従う
 - 具体的で詳細な描写（AIが画像生成できるレベルの詳細さ）
 - 各画像は異なる構図・アングルにする
+- 30日分の投稿全体で、全てのキャラクターと全てのルールがバランス良く登場するようにする
 
 ## テキストエリア1（B,E,H,K列）のルール
 - 1行あたり最大8文字
@@ -229,7 +289,8 @@ M列: 投稿のテキスト+ハッシュタグ
 - フィールドにカンマが含まれる場合はダブルクォートで囲む
 - **画像説明は必ず日本語**
 - **テキスト内の改行は必ず「\\n」で表現**
-- **キャラクター設定と一貫性ルールを必ず反映**
+- **全てのキャラクター設定と全ての一貫性ルールを活用すること**
+- **30日分で、全キャラクターと全ルールがバランス良く登場するように配分する**
 
 ## 出力例（1日分）
 "明るい教室でプログラミングを教える山﨑琢己塾長。紺のポロシャツ姿で笑顔。背景にマインクラフト画面。自然光が差し込む明るい雰囲気。","AIと\\n起業","プログラミング\\nオンライン塾\\nif(塾)へ\\nようこそ！","生徒がマインクラフトで遊びながらプログラミング学習。画面にはコードブロック。山﨑塾長がサポート。明るい教室。","遊びが\\n学び","マインクラフトで\\n探求する力\\nAI先生が\\nサポート","思考を巡らせる生徒。ホワイトボードにビジネスモデル図。山﨑塾長が助言。暖かい照明。","未来を\\n創る","AI活用で\\nビジネス\\nモデル構築\\n体験","オンラインで山﨑塾長とメンターが生徒をサポート。画面越しに笑顔。多様な生徒が参加。","実践力\\nを育む","メンターと\\n仕事体験\\n収益化も\\n経験","if(塾)はAIと起業を学ぶオンラインプログラミング塾です。マインクラフトで楽しく学び、AI先生のサポートを受けながら、未来を創る力を養います。ビジネスモデル構築から実際の仕事経験まで、お子様の可能性を最大限に引き出します。 #if塾 #オンラインプログラミング #AI学習 #起業家教育 #マインクラフト #子供の習い事 #未来を学ぶ"

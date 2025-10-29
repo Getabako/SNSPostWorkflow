@@ -19,9 +19,11 @@ SNSWorkFlow/
 ├── character/                   # キャラクター設定（一貫性）
 │   ├── 塾長山﨑琢己.csv
 │   ├── ゆうま.csv
-│   └── ...（7人分のキャラクター設定）
+│   ├── CTO井上陽斗.csv
+│   ├── 塾頭高崎翔太.csv
+│   └── 渡辺ゆづき.csv           # 全て自動読み込み
 ├── imagerule/                   # 画像一貫性ルール
-│   └── iftech.csv              # 場所・照明・スタイル設定
+│   └── ifjuku.csv              # 場所・照明・スタイル設定（全て自動読み込み）
 ├── output/                      # 生成物の出力先
 │   ├── business-info.json       # 抽出された事業情報
 │   ├── business-summary.txt     # AIプロンプト用サマリー
@@ -63,34 +65,30 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 #### ステップ1-2: カレンダー生成（自動化）
 
-**基本実行**:
 ```bash
 npm run workflow
 ```
 
-**キャラクター・ルールを指定**:
+または、カレンダー生成のみを実行：
+
 ```bash
-# デフォルト（塾長山﨑琢己 + iftech）
 npm run generate-calendar
-
-# キャラクターを指定
-npm run generate-calendar -- --character=ゆうま
-
-# ルールを指定
-npm run generate-calendar -- --rule=iftech
-
-# 両方指定
-npm run generate-calendar -- --character=山田先生 --rule=iftech
 ```
 
-**利用可能なキャラクター**:
-- 塾長山﨑琢己（デフォルト）
-- ゆうま
+**自動読み込み機能**:
+- `character/` フォルダの**全てのキャラクターCSV**を自動読み込み
+- `imagerule/` フォルダの**全ての一貫性ルールCSV**を自動読み込み
+- 30日分の投稿で、全キャラクター・全ルールをバランス良く配分
+
+**現在使用中のキャラクター**（全て自動読み込み）:
+- 塾長山﨑琢己
+- ゆうま（CFO加賀屋結眞）
 - CTO井上陽斗
 - 塾頭高崎翔太
-- 山田先生
-- 楢原先生
 - 渡辺ゆづき
+
+**現在使用中のルール**（全て自動読み込み）:
+- ifjuku（サイバーパンク風オンラインプログラミング塾）
 
 これで以下が生成されます：
 - `output/business-info.json` - 事業情報
@@ -184,7 +182,8 @@ npm run generate-calendar -- --character=山田先生 --rule=iftech
 
 **重要**:
 - 画像説明は**日本語**で出力
-- `character/`と`imagerule/`の設定を反映した一貫性のある描写
+- `character/`と`imagerule/`の**全てのファイル**を自動読み込み
+- 30日分で全キャラクター・全ルールがバランス良く登場
 - テキストエリアの改行は`\n`で表現
 
 ## 使用している既存ツール
@@ -269,7 +268,7 @@ echo $OPENAI_API_KEY
 
 新しいキャラクターを追加する場合：
 
-1. `character/` フォルダに新しいCSVファイルを作成
+1. `character/` フォルダに新しいCSVファイルを作成（日本語推奨）
 2. 以下の列を含める：
    - `name`: キャラクター名
    - `appearance`: 外見
@@ -281,28 +280,28 @@ echo $OPENAI_API_KEY
    - `personality`: 性格
    - `additional`: 追加情報
 
-3. コマンドで使用：
-```bash
-npm run generate-calendar -- --character=新キャラ名
-```
+3. **次回の実行で自動的に読み込まれます** - コマンド引数は不要
 
 ### 画像一貫性ルールの追加
 
 新しいルールを追加する場合：
 
-1. `imagerule/` フォルダに新しいCSVファイルを作成
+1. `imagerule/` フォルダに新しいCSVファイルを作成（日本語推奨）
 2. 以下の列を含める：
    - `name`: ルール名
    - `location`: 場所の説明
    - `characters`: 登場人物の描写
    - `lighting`: 照明設定
    - `style`: アートスタイル
-   - `additional`: 追加情報
+   - `additional`: 追加情報（ハッシュタグのルールも含める）
 
-3. コマンドで使用：
-```bash
-npm run generate-calendar -- --rule=新ルール名
-```
+3. **次回の実行で自動的に読み込まれます** - コマンド引数は不要
+
+### 使用するファイルの管理
+
+- `character/` と `imagerule/` フォルダのCSVファイルは**全て自動的に読み込まれます**
+- 使いたくないキャラクターやルールは、フォルダから削除するか、別の場所に移動してください
+- ファイルを追加・削除したら、`npm run generate-calendar` を実行してください
 
 ### 投稿テーマをカスタマイズ
 
