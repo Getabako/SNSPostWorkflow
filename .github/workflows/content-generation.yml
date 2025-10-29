@@ -56,6 +56,13 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run generate-calendar
 
+      # 画像自動生成（オプション）
+      - name: 画像を自動生成
+        if: ${{ github.event.inputs.generate_images == 'true' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run generate-images
+
       # 生成物をArtifactとしてアップロード
       - name: 生成物をアップロード
         uses: actions/upload-artifact@v4
@@ -64,6 +71,7 @@ jobs:
           path: |
             output/calendar.csv
             output/business-summary.txt
+            output/images/
           retention-days: 90
 
       # 結果をコミット（オプション）
@@ -86,4 +94,9 @@ jobs:
       - name: 完了
         run: |
           echo "✅ Instagram投稿カレンダー生成完了"
-          echo "📋 Artifactから calendar.csv をダウンロードしてください"
+          if [ "${{ github.event.inputs.generate_images }}" == "true" ]; then
+            echo "🖼️  画像も自動生成されました"
+            echo "📋 Artifactから calendar.csv と images/ フォルダをダウンロードしてください"
+          else
+            echo "📋 Artifactから calendar.csv をダウンロードしてください"
+          fi

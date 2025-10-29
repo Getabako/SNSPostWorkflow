@@ -7,7 +7,9 @@
   "scripts": {
     "analyze-homepage": "node src/analyze-homepage.js",
     "generate-calendar": "node src/generate-calendar.js",
-    "workflow": "npm run analyze-homepage && npm run generate-calendar"
+    "generate-images": "node src/generate-images.js",
+    "workflow": "npm run analyze-homepage && npm run generate-calendar",
+    "workflow-with-images": "npm run analyze-homepage && npm run generate-calendar && npm run generate-images"
   },
   "keywords": [
     "instagram",

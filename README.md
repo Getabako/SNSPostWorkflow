@@ -15,7 +15,8 @@ SNSWorkFlow/
 ├── imagegenerator.html          # 画像加工+アップロード+CSV作成
 ├── src/
 │   ├── analyze-homepage.js      # ホームページ解析スクリプト
-│   └── generate-calendar.js     # カレンダー生成スクリプト
+│   ├── generate-calendar.js     # カレンダー生成スクリプト
+│   └── generate-images.js       # AI画像自動生成スクリプト
 ├── character/                   # キャラクター設定（一貫性）
 │   ├── 塾長山﨑琢己.csv
 │   ├── ゆうま.csv
@@ -95,7 +96,36 @@ npm run generate-calendar
 - `output/business-summary.txt` - サマリー
 - `output/calendar.csv` - 30日分の投稿カレンダー（13列×30行）
 
-#### ステップ3: AI画像生成（手動）
+#### ステップ2.5: AI画像自動生成（NEW! 完全自動化✨）
+
+**カレンダーの画像説明から自動的に画像を生成します:**
+
+```bash
+# 画像のみ生成
+npm run generate-images
+
+# または、カレンダー生成→画像生成を一気に実行
+npm run workflow-with-images
+```
+
+**機能**:
+- カレンダーCSVの列A, D, G, J（画像説明）を自動読み込み
+- Gemini API (`gemini-2.5-flash-image`) で画像生成
+- 各日4枚の画像を自動生成（day01_01.png ～ day30_04.png）
+- 正方形（1:1）フォーマット
+- プロンプト強化（日本人、テキストなし）
+- 自動的に `output/images/` に保存
+
+**注意**:
+- 30日分 × 4枚 = 120枚の画像生成には約4-5分かかります
+- API制限を考慮して各画像間に1秒の待機時間を設定
+- 一部の画像生成が失敗しても、スクリプトは継続実行されます
+
+これで、**手動での画像生成ステップをスキップできます！**
+
+#### ステップ3: AI画像生成（手動 - オプション）
+
+**注**: `npm run generate-images` を実行した場合、このステップはスキップできます。
 
 1. ブラウザで `magicalnanobanana.html` を開く
 2. パスワード: `IFjuku19841121`
@@ -128,6 +158,7 @@ npm run generate-calendar
 1. GitHubリポジトリの「Actions」タブ
 2. 「Instagram投稿コンテンツ生成」を選択
 3. 「Run workflow」をクリック
+4. **「画像も自動生成する（Gemini API使用）」にチェック** を入れると画像も自動生成されます（オプション）
 
 ### 生成物のダウンロード
 
@@ -144,19 +175,20 @@ npm run generate-calendar
 2. 投稿カレンダー生成 (自動)
    ↓ generate-calendar.js → calendar.csv
 
-3. AI画像生成 (手動)
-   ↓ magicalnanobanana.html → 画像ZIP
+2.5. AI画像自動生成 (自動 - NEW!✨)
+   ↓ generate-images.js → output/images/*.png
+   【または手動: magicalnanobanana.html → 画像ZIP】
 
-4. 画像に文字追加 (手動)
+3. 画像に文字追加 (手動)
    ↓ imagegenerator.html → 加工画像ZIP
 
-5. サーバーアップロード (手動)
+4. サーバーアップロード (手動)
    ↓ imagegenerator.html → images.if-juku.net
 
-6. Publer CSV作成 (手動)
+5. Publer CSV作成 (手動)
    ↓ imagegenerator.html → 一括投稿データ.csv
 
-7. Publerにインポート (手動)
+6. Publerにインポート (手動)
    ↓ Publer → Instagram投稿
 ```
 
@@ -221,8 +253,14 @@ npm run analyze-homepage
 # カレンダー生成
 npm run generate-calendar
 
-# 全自動（ステップ1-2）
+# AI画像自動生成（NEW!）
+npm run generate-images
+
+# 全自動（ステップ1-2: カレンダーまで）
 npm run workflow
+
+# 完全自動（ステップ1-2.5: 画像生成まで）
+npm run workflow-with-images
 ```
 
 ## コスト試算
@@ -321,7 +359,10 @@ echo $OPENAI_API_KEY
 
 ## 今後の拡張予定
 
-- [ ] 完全自動化（画像生成〜CSV作成まで）
+- [x] ~~完全自動化（画像生成〜CSV作成まで）~~ ✅ **画像生成まで完了！**
+- [ ] 画像への文字オーバーレイの自動化
+- [ ] サーバーアップロードの自動化
+- [ ] CSV作成の自動化
 - [ ] 複数SNS対応（Twitter, Facebook）
 - [ ] パフォーマンス分析の統合
 - [ ] Webhook通知機能
