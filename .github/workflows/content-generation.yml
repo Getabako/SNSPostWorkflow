@@ -19,7 +19,7 @@ on:
     branches:
       - main
     paths:
-      - 'index copy.html'
+      - 'index.html'
 
 jobs:
   generate-content:
