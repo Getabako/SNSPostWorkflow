@@ -48,8 +48,7 @@ cp .env.example .env
 `.env` ファイルに以下を設定：
 
 ```env
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-GEMINI_API_KEY=AIzaSyCB484iyfZOA79svA7rJ7QNB-P5HJmt-Tw
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **注意**: APIキーは絶対に公開リポジトリにコミットしないでください！
@@ -88,7 +87,7 @@ npm run workflow
 ### セットアップ
 
 1. リポジトリのSettings > Secrets > Actionsで以下を設定：
-   - `OPENAI_API_KEY`
+   - `GEMINI_API_KEY`
 
 2. 自動実行タイミング：
    - 毎月1日 午前9時（JST）
@@ -193,13 +192,10 @@ npm run workflow
 
 ## コスト試算
 
-### OpenAI API（GPT-4）
-- カレンダー生成: $0.01-0.03 / 回
-- 月1回実行: $0.01-0.03 / 月
-
 ### Gemini API
-- 無料枠: 1,500リクエスト/日
-- 画像生成: 基本無料
+- 無料枠: 60リクエスト/分（十分な量）
+- カレンダー生成: 無料
+- 画像生成: 無料（一定量まで）
 
 ### サーバー
 - 既存インフラ利用（`https://images.if-juku.net/`）

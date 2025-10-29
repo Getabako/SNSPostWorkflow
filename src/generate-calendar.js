@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -18,8 +18,8 @@ async function generateCalendar() {
     console.log('📅 投稿カレンダーを生成中...\n');
 
     // APIキーの確認
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEYが設定されていません。.envファイルを確認してください。');
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEYが設定されていません。.envファイルを確認してください。');
     }
 
     // 事業情報の読み込み
@@ -31,10 +31,9 @@ async function generateCalendar() {
     const businessSummary = readFileSync(businessSummaryPath, 'utf-8');
     console.log('✅ 事業情報を読み込みました\n');
 
-    // OpenAIクライアントの初期化
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    // Gemini APIクライアントの初期化
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     // カレンダー生成用プロンプト
     const prompt = `
@@ -65,7 +64,7 @@ ${businessSummary}
 ## 重要な制約
 - テキスト1は改行で区切った場合、各行8文字以内、最大2行
 - テキスト2は改行で区切った場合、各行12文字以内、最大4行
-- 画像説明は英語で、DALL-E 3で生成可能な具体的なプロンプト
+- 画像説明は英語で、Gemini/DALL-Eで生成可能な具体的なプロンプト
 - 投稿テキストには関連するハッシュタグを5〜10個含める
 - 30日分の内容は多様性を持たせ、事業の異なる側面を紹介する
 
@@ -85,26 +84,15 @@ CSV形式で出力してください（ヘッダーは不要、データ行の�
 各フィールドはカンマ区切りで、改行を含む場合はダブルクォートで囲んでください。
 `;
 
-    console.log('🤖 OpenAI GPT-4でカレンダーを生成中...');
+    console.log('🤖 Gemini AIでカレンダーを生成中...');
     console.log('⏳ 処理には1〜2分かかる場合があります\n');
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: 'あなたはInstagramマーケティングとコンテンツ制作の専門家です。魅力的で効果的な投稿カレンダーを作成します。'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.8,
-      max_tokens: 4000
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let calendarCSV = response.text().trim();
 
-    const calendarCSV = response.choices[0].message.content.trim();
+    // コードブロックのマークダウンを削除（Geminiが返す場合がある）
+    calendarCSV = calendarCSV.replace(/```csv\n/g, '').replace(/```\n/g, '').replace(/```/g, '');
 
     // CSVファイルとして保存
     const csvPath = join(__dirname, '..', 'output', 'calendar.csv');
