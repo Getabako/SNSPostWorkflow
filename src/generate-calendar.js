@@ -33,7 +33,7 @@ async function generateCalendar() {
 
     // Gemini APIクライアントの初期化
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // カレンダー生成用プロンプト
     const prompt = `
@@ -80,8 +80,18 @@ ${businessSummary}
 - お客様の声
 - 豆知識
 
-CSV形式で出力してください（ヘッダーは不要、データ行のみ）。
-各フィールドはカンマ区切りで、改行を含む場合はダブルクォートで囲んでください。
+## 出力形式の重要なルール
+- **1日=1行**（必ず13個のフィールドをカンマで区切って1行にまとめる）
+- ヘッダーは不要、データ行のみ30行出力
+- テキスト内の改行は「\\n」に置き換える（実際の改行は入れない）
+- フィールドにカンマが含まれる場合のみダブルクォートで囲む
+- 画像説明は改行なし、1行で完結する英語プロンプト
+- テキスト1とテキスト2は改行記号「\\n」で行を区切る（例: "AIと起業\\nを学ぶ"）
+
+例（1日分）:
+"A bright scene...",AIと\\n起業,プログラミング\\nオンライン塾\\nで学ぶ,"A child coding...",マイクラで,プログラミング\\n創造力を\\n育む,...(以下省略)
+
+**必ず30日分、30行のCSVを出力してください。**
 `;
 
     console.log('🤖 Gemini AIでカレンダーを生成中...');
