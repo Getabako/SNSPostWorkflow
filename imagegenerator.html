@@ -907,9 +907,18 @@ AI技術を子どもにも分かりやすく解説 写真を撮る AIが認識�
                                 <input type="time" id="calendarPostTime" value="18:00" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
                             </div>
                         </div>
-                        <div class="control-group">
-                            <label>フォルダ名プレフィックス（自動で _post_年_月 が追加されます）</label>
-                            <input type="text" id="calendarFolderPrefix" value="if_juku" placeholder="例: if_juku" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label>投稿数（テスト用に少ない数を指定可能）</label>
+                                <input type="number" id="calendarPostCount" value="3" min="1" max="100" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                                <div class="help-text" style="margin-top: 5px; font-size: 0.9em; color: #666;">
+                                    テスト時は3日分、本番時は30日分などと指定できます
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label>フォルダ名プレフィックス（自動で _post_年_月 が追加されます）</label>
+                                <input type="text" id="calendarFolderPrefix" value="if_juku" placeholder="例: if_juku" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2275,6 +2284,7 @@ AI技術を子どもにも分かりやすく解説 写真を撮る AIが認識�
 
             const startDateInput = document.getElementById('calendarStartDate');
             const postTimeInput = document.getElementById('calendarPostTime');
+            const postCountInput = document.getElementById('calendarPostCount');
 
             if (!startDateInput.value) {
                 alert('開始日を選択してください。');
@@ -2283,11 +2293,15 @@ AI技術を子どもにも分かりやすく解説 写真を撮る AIが認識�
 
             const startDate = new Date(startDateInput.value);
             const [hours, minutes] = postTimeInput.value.split(':');
+            const postCount = parseInt(postCountInput.value) || 3;
+
+            // Limit posts to specified count
+            const postsToUse = blogPosts.slice(0, postCount);
 
             calendarEntries = [];
 
             // Create calendar entries for each post
-            blogPosts.forEach((post, index) => {
+            postsToUse.forEach((post, index) => {
                 const postDate = new Date(startDate);
                 postDate.setDate(startDate.getDate() + index);
                 postDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
