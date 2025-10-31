@@ -28,15 +28,15 @@ function parseCSV(content) {
 }
 
 /**
- * characterフォルダのCSVファイルをリストアップ
+ * characterフォルダのサブフォルダ（キャラクター）をリストアップ
  */
 function listCharacters() {
   const characterDir = join(__dirname, '..', 'character');
   if (!existsSync(characterDir)) return [];
 
-  return readdirSync(characterDir)
-    .filter(file => file.endsWith('.csv'))
-    .map(file => file.replace('.csv', ''));
+  return readdirSync(characterDir, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
 }
 
 /**
@@ -55,7 +55,8 @@ function listImageRules() {
  * キャラクター設定を読み込み
  */
 function loadCharacter(characterName) {
-  const characterPath = join(__dirname, '..', 'character', `${characterName}.csv`);
+  // サブフォルダ内のCSVファイルを探す
+  const characterPath = join(__dirname, '..', 'character', characterName, `${characterName}.csv`);
   if (!existsSync(characterPath)) {
     throw new Error(`キャラクター設定が見つかりません: ${characterName}`);
   }
@@ -84,11 +85,14 @@ function loadAllCharacters() {
   const characterDir = join(__dirname, '..', 'character');
   if (!existsSync(characterDir)) return [];
 
-  const files = readdirSync(characterDir).filter(file => file.endsWith('.csv'));
+  // サブフォルダをリストアップ
+  const folders = readdirSync(characterDir, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+
   const characters = [];
 
-  for (const file of files) {
-    const characterName = file.replace('.csv', '');
+  for (const characterName of folders) {
     try {
       const character = loadCharacter(characterName);
       characters.push(character);
