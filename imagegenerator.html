@@ -469,6 +469,7 @@
             <button class="tab-button active" data-tab="image-generator">画像生成</button>
             <button class="tab-button" data-tab="file-uploader">ファイルアップロード</button>
             <button class="tab-button" data-tab="csv-generator">CSV作成</button>
+            <button class="tab-button" data-tab="post-calendar">投稿カレンダー</button>
         </div>
 
         <div class="tab-content active" id="image-generator">
@@ -856,6 +857,128 @@ AI技術を子どもにも分かりやすく解説 写真を撮る AIが認識�
                 <h2>📄 プレビュー</h2>
                 <div style="background: white; padding: 20px; border-radius: 10px; overflow-x: auto;">
                     <pre id="csvPreview" style="margin: 0; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="post-calendar">
+            <div class="input-section" style="grid-template-columns: 1fr;">
+                <div class="input-container">
+                    <h2>📂 ブログ記事とキャラクター読み込み</h2>
+                    <div class="control-group" style="margin-bottom: 20px;">
+                        <label>ブログ記事HTMLファイル（複数選択可）</label>
+                        <input type="file" id="postFiles" multiple accept=".html" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div class="control-group" style="margin-bottom: 20px;">
+                        <label>キャラクターフォルダ（character フォルダを選択）</label>
+                        <input type="file" id="characterFolder" webkitdirectory directory style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div class="help-text">
+                        • ブログ記事: postsフォルダ内のHTMLファイルを選択<br>
+                        • キャラクター: characterフォルダを選択（サブフォルダに各人物のCSVと画像が含まれます）
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadedData" style="display: none; margin-bottom: 30px;">
+                <div class="controls">
+                    <h2>📋 読み込まれたデータ</h2>
+                    <div style="background: white; padding: 20px; border-radius: 10px;">
+                        <h3 style="color: #e6683c; margin-bottom: 10px;">ブログ記事 (<span id="postCount">0</span>件)</h3>
+                        <div id="postsList" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;"></div>
+
+                        <h3 style="color: #e6683c; margin-bottom: 10px;">キャラクター (<span id="characterCount">0</span>人)</h3>
+                        <div id="charactersList" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="postCalendarControls" style="display: none;">
+                <div class="controls">
+                    <h2>📅 投稿カレンダー設定</h2>
+                    <div class="control-section">
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label>開始日</label>
+                                <input type="date" id="calendarStartDate" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                            </div>
+                            <div class="control-group">
+                                <label>投稿時刻</label>
+                                <input type="time" id="calendarPostTime" value="18:00" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>フォルダ名プレフィックス（自動で _post_年_月 が追加されます）</label>
+                            <input type="text" id="calendarFolderPrefix" value="if_juku" placeholder="例: if_juku" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="generateCalendarBtn">カレンダー生成</button>
+                </div>
+            </div>
+
+            <div id="calendarPreview" style="display: none; margin-top: 30px;">
+                <div class="controls">
+                    <h2>📆 投稿カレンダー プレビュー</h2>
+                    <div style="background: white; padding: 20px; border-radius: 10px; overflow-x: auto;">
+                        <table id="calendarTable" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f0f0f0;">
+                                    <th style="padding: 10px; border: 1px solid #ddd;">日付</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">記事タイトル</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">キャラクター</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">状態</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="action-buttons" style="margin-top: 20px;">
+                        <button class="btn btn-success" id="generateImagesBtn">画像一括生成</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-bar" id="calendarProgressBar" style="display: none;">
+                <div class="progress-fill" id="calendarProgressFill"></div>
+            </div>
+            <div class="status-text" id="calendarStatusText" style="display: none;"></div>
+
+            <div id="calendarImagesPreview" style="display: none; margin-top: 30px;">
+                <div class="controls">
+                    <h2>🖼️ 生成された画像</h2>
+                    <div class="preview-grid" id="calendarImagesGrid" style="max-height: 600px; overflow-y: auto;"></div>
+                    <div class="action-buttons" style="margin-top: 20px;">
+                        <button class="btn btn-success" id="downloadCalendarZipBtn">ZIPでダウンロード</button>
+                        <button class="btn btn-primary" id="uploadCalendarImagesBtn">images.if-juku.netにアップロード</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendarUploadSection" style="display: none; margin-top: 30px;">
+                <div class="controls">
+                    <h2>🔐 アップロード認証</h2>
+                    <div class="control-section">
+                        <div class="control-group" style="max-width: 600px;">
+                            <label>アップロード用パスワード</label>
+                            <input type="password" id="calendarUploadPassword" placeholder="パスワードを入力" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                            <div class="help-text" style="margin-top: 10px;">
+                                セキュリティのため、アップロード時にパスワード認証が必要です
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendarUploadResult" style="display: none; margin-top: 30px;">
+                <div class="controls">
+                    <h2>✅ アップロード結果</h2>
+                    <div style="background: white; padding: 20px; border-radius: 10px;">
+                        <div id="calendarUploadResultContent"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1948,6 +2071,600 @@ AI技術を子どもにも分かりやすく解説 写真を撮る AIが認識�
                 uploadProgressBar.style.display = 'none';
             }, 2000);
         }
+
+        // ==================== POST CALENDAR FUNCTIONALITY ====================
+
+        let blogPosts = [];
+        let characters = {};
+        let calendarEntries = [];
+        let calendarGeneratedImages = [];
+
+        const postFilesInput = document.getElementById('postFiles');
+        const characterFolderInput = document.getElementById('characterFolder');
+        const loadedDataDiv = document.getElementById('loadedData');
+        const postCountSpan = document.getElementById('postCount');
+        const postsListDiv = document.getElementById('postsList');
+        const characterCountSpan = document.getElementById('characterCount');
+        const charactersListDiv = document.getElementById('charactersList');
+        const postCalendarControlsDiv = document.getElementById('postCalendarControls');
+        const generateCalendarBtn = document.getElementById('generateCalendarBtn');
+        const calendarPreviewDiv = document.getElementById('calendarPreview');
+        const calendarTableBody = document.getElementById('calendarTableBody');
+        const generateImagesBtn = document.getElementById('generateImagesBtn');
+        const calendarProgressBar = document.getElementById('calendarProgressBar');
+        const calendarProgressFill = document.getElementById('calendarProgressFill');
+        const calendarStatusText = document.getElementById('calendarStatusText');
+        const calendarImagesPreview = document.getElementById('calendarImagesPreview');
+        const calendarImagesGrid = document.getElementById('calendarImagesGrid');
+        const downloadCalendarZipBtn = document.getElementById('downloadCalendarZipBtn');
+        const uploadCalendarImagesBtn = document.getElementById('uploadCalendarImagesBtn');
+
+        // Event listeners for post calendar
+        if (postFilesInput) {
+            postFilesInput.addEventListener('change', handlePostFilesSelect);
+        }
+        if (characterFolderInput) {
+            characterFolderInput.addEventListener('change', handleCharacterFolderSelect);
+        }
+        if (generateCalendarBtn) {
+            generateCalendarBtn.addEventListener('click', generatePostCalendar);
+        }
+        if (generateImagesBtn) {
+            generateImagesBtn.addEventListener('click', generateCalendarImages);
+        }
+        if (downloadCalendarZipBtn) {
+            downloadCalendarZipBtn.addEventListener('click', downloadCalendarZip);
+        }
+        if (uploadCalendarImagesBtn) {
+            uploadCalendarImagesBtn.addEventListener('click', () => {
+                document.getElementById('calendarUploadSection').style.display = 'block';
+                uploadCalendarImagesToServer();
+            });
+        }
+
+        // Handle blog post files selection
+        async function handlePostFilesSelect(e) {
+            const files = Array.from(e.target.files);
+            blogPosts = [];
+
+            for (const file of files) {
+                try {
+                    const content = await readFileAsText(file);
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(content, 'text/html');
+
+                    // Extract post data
+                    const titleElement = doc.querySelector('.post-title, h1');
+                    const dateElement = doc.querySelector('.post-date');
+                    const contentElement = doc.querySelector('.post-content');
+                    const categoryElements = doc.querySelectorAll('.category-tag');
+
+                    const post = {
+                        filename: file.name,
+                        title: titleElement ? titleElement.textContent.trim() : file.name,
+                        date: dateElement ? dateElement.textContent.trim() : '',
+                        content: contentElement ? contentElement.textContent.trim() : '',
+                        contentHTML: contentElement ? contentElement.innerHTML : '',
+                        categories: Array.from(categoryElements).map(el => el.textContent.trim())
+                    };
+
+                    blogPosts.push(post);
+                } catch (error) {
+                    console.error(`Error parsing ${file.name}:`, error);
+                }
+            }
+
+            updateLoadedDataDisplay();
+        }
+
+        // Handle character folder selection
+        async function handleCharacterFolderSelect(e) {
+            const files = Array.from(e.target.files);
+            characters = {};
+
+            // Group files by character folder
+            const characterFolders = {};
+            for (const file of files) {
+                const pathParts = file.webkitRelativePath.split('/');
+                if (pathParts.length >= 2) {
+                    const characterName = pathParts[1]; // character/人物名/ファイル
+                    if (!characterFolders[characterName]) {
+                        characterFolders[characterName] = [];
+                    }
+                    characterFolders[characterName].push(file);
+                }
+            }
+
+            // Process each character folder
+            for (const [characterName, charFiles] of Object.entries(characterFolders)) {
+                const csvFile = charFiles.find(f => f.name.endsWith('.csv'));
+                const imageFile = charFiles.find(f => f.name.match(/\.(png|jpg|jpeg)$/i));
+
+                if (csvFile && imageFile) {
+                    try {
+                        const csvContent = await readFileAsText(csvFile);
+                        const characterData = parseCharacterCSV(csvContent);
+                        const imageDataUrl = await readFileAsDataURL(imageFile);
+
+                        characters[characterName] = {
+                            name: characterName,
+                            data: characterData,
+                            image: imageDataUrl,
+                            imageFile: imageFile
+                        };
+                    } catch (error) {
+                        console.error(`Error loading character ${characterName}:`, error);
+                    }
+                }
+            }
+
+            updateLoadedDataDisplay();
+        }
+
+        // Parse character CSV file
+        function parseCharacterCSV(csvContent) {
+            const lines = csvContent.split('\n');
+            if (lines.length < 2) return {};
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const values = lines[1].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+
+            const data = {};
+            headers.forEach((header, index) => {
+                data[header] = values[index] || '';
+            });
+
+            return data;
+        }
+
+        // Read file as text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Read file as data URL
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Update loaded data display
+        function updateLoadedDataDisplay() {
+            if (blogPosts.length > 0 || Object.keys(characters).length > 0) {
+                loadedDataDiv.style.display = 'block';
+                postCalendarControlsDiv.style.display = 'block';
+
+                // Update posts list
+                postCountSpan.textContent = blogPosts.length;
+                postsListDiv.innerHTML = blogPosts.map(post => `
+                    <div style="padding: 5px 0; color: #666; border-bottom: 1px solid #eee;">
+                        📄 ${post.title}
+                    </div>
+                `).join('');
+
+                // Update characters list
+                characterCountSpan.textContent = Object.keys(characters).length;
+                charactersListDiv.innerHTML = Object.keys(characters).map(name => `
+                    <div style="padding: 5px 0; color: #666; border-bottom: 1px solid #eee;">
+                        👤 ${name}
+                    </div>
+                `).join('');
+
+                // Set default start date to tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                document.getElementById('calendarStartDate').valueAsDate = tomorrow;
+            }
+        }
+
+        // Generate post calendar
+        function generatePostCalendar() {
+            if (blogPosts.length === 0) {
+                alert('ブログ記事を読み込んでください。');
+                return;
+            }
+
+            const startDateInput = document.getElementById('calendarStartDate');
+            const postTimeInput = document.getElementById('calendarPostTime');
+
+            if (!startDateInput.value) {
+                alert('開始日を選択してください。');
+                return;
+            }
+
+            const startDate = new Date(startDateInput.value);
+            const [hours, minutes] = postTimeInput.value.split(':');
+
+            calendarEntries = [];
+
+            // Create calendar entries for each post
+            blogPosts.forEach((post, index) => {
+                const postDate = new Date(startDate);
+                postDate.setDate(startDate.getDate() + index);
+                postDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                // Randomly assign a character (if available)
+                const characterNames = Object.keys(characters);
+                const assignedCharacter = characterNames.length > 0
+                    ? characterNames[index % characterNames.length]
+                    : 'なし';
+
+                calendarEntries.push({
+                    date: postDate,
+                    post: post,
+                    character: assignedCharacter,
+                    status: '未生成'
+                });
+            });
+
+            // Display calendar preview
+            displayCalendarPreview();
+        }
+
+        // Display calendar preview
+        function displayCalendarPreview() {
+            calendarPreviewDiv.style.display = 'block';
+
+            calendarTableBody.innerHTML = calendarEntries.map((entry, index) => {
+                const dateStr = formatDateTime(entry.date);
+                return `
+                    <tr id="calendar-row-${index}">
+                        <td style="padding: 10px; border: 1px solid #ddd;">${dateStr}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${entry.post.title}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            <select onchange="updateEntryCharacter(${index}, this.value)" style="width: 100%; padding: 5px;">
+                                ${Object.keys(characters).map(name => `
+                                    <option value="${name}" ${entry.character === name ? 'selected' : ''}>${name}</option>
+                                `).join('')}
+                                <option value="なし" ${entry.character === 'なし' ? 'selected' : ''}>なし</option>
+                            </select>
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd;" id="status-${index}">${entry.status}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update entry character
+        window.updateEntryCharacter = function(index, characterName) {
+            calendarEntries[index].character = characterName;
+        };
+
+        // Format date time
+        function formatDateTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+
+        // Generate calendar images
+        async function generateCalendarImages() {
+            if (calendarEntries.length === 0) {
+                alert('先にカレンダーを生成してください。');
+                return;
+            }
+
+            calendarGeneratedImages = [];
+            calendarProgressBar.style.display = 'block';
+            calendarStatusText.style.display = 'block';
+            calendarStatusText.textContent = '画像生成中...';
+            calendarImagesGrid.innerHTML = '';
+            calendarImagesPreview.style.display = 'none';
+
+            for (let i = 0; i < calendarEntries.length; i++) {
+                const entry = calendarEntries[i];
+                const progress = ((i + 1) / calendarEntries.length) * 100;
+                calendarProgressFill.style.width = progress + '%';
+                calendarStatusText.textContent = `画像生成中... (${i + 1}/${calendarEntries.length})`;
+
+                try {
+                    // Update status
+                    const statusCell = document.getElementById(`status-${i}`);
+                    if (statusCell) statusCell.textContent = '生成中...';
+
+                    // Generate image for this entry
+                    const imageData = await generatePostImage(entry, i);
+                    calendarGeneratedImages.push(imageData);
+
+                    // Update status
+                    if (statusCell) statusCell.textContent = '✓ 完了';
+                    entry.status = '✓ 完了';
+
+                    // Add to preview grid
+                    const container = document.createElement('div');
+                    container.className = 'canvas-container';
+                    container.innerHTML = `
+                        <h3>${String(i).padStart(3, '0')}.png - ${entry.post.title}</h3>
+                        <img src="${imageData.dataUrl}" style="max-width: 100%; border-radius: 8px;">
+                    `;
+                    calendarImagesGrid.appendChild(container);
+
+                } catch (error) {
+                    console.error(`Error generating image for entry ${i}:`, error);
+                    const statusCell = document.getElementById(`status-${i}`);
+                    if (statusCell) statusCell.textContent = '✗ エラー';
+                    entry.status = '✗ エラー';
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            calendarStatusText.textContent = `${calendarGeneratedImages.length}枚の画像を生成完了！`;
+            calendarImagesPreview.style.display = 'block';
+
+            setTimeout(() => {
+                calendarProgressBar.style.display = 'none';
+            }, 2000);
+        }
+
+        // Generate post image
+        async function generatePostImage(entry, index) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const canvasWidth = 1080;
+            const canvasHeight = 1350; // 4:5 ratio
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Fill background with white
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // Load character image if assigned
+            if (entry.character && entry.character !== 'なし' && characters[entry.character]) {
+                const characterImg = await loadImage(characters[entry.character].image);
+
+                // Draw character image (fit to canvas maintaining aspect ratio)
+                const scale = Math.max(canvasWidth / characterImg.width, canvasHeight / characterImg.height);
+                const drawWidth = characterImg.width * scale;
+                const drawHeight = characterImg.height * scale;
+                const drawX = (canvasWidth - drawWidth) / 2;
+                const drawY = (canvasHeight - drawHeight) / 2;
+
+                ctx.drawImage(characterImg, drawX, drawY, drawWidth, drawHeight);
+            }
+
+            // Draw title text at top (10%)
+            const titleText = entry.post.title;
+            const titleY = canvasHeight * 0.1;
+            const titleColor = getRandomTextColor(true);
+
+            await drawText(
+                ctx,
+                titleText,
+                titleFontSelect.value,
+                parseInt(titleFontSize.value),
+                titleColor,
+                titleAlignment,
+                titleEffect,
+                0,
+                titleY,
+                canvasWidth
+            );
+
+            // Draw content text at middle (45%)
+            // Extract first 100 characters from content as preview
+            const contentText = entry.post.content.substring(0, 100) + (entry.post.content.length > 100 ? '...' : '');
+            const contentPosY = canvasHeight * 0.45;
+            const contentColor = getRandomTextColor(false);
+
+            await drawText(
+                ctx,
+                contentText,
+                contentFontSelect.value,
+                parseInt(contentFontSize.value),
+                contentColor,
+                contentAlignment,
+                contentEffect,
+                0,
+                contentPosY,
+                canvasWidth
+            );
+
+            // Convert canvas to data URL
+            const dataUrl = canvas.toDataURL('image/png');
+            const filename = `${String(index).padStart(3, '0')}.png`;
+
+            return {
+                canvas,
+                dataUrl,
+                filename,
+                entry
+            };
+        }
+
+        // Load image from data URL
+        function loadImage(dataUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
+        }
+
+        // Download calendar as ZIP
+        async function downloadCalendarZip() {
+            if (calendarGeneratedImages.length === 0) {
+                alert('先に画像を生成してください。');
+                return;
+            }
+
+            const folderPrefix = document.getElementById('calendarFolderPrefix').value || 'if_juku';
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const folderName = `${folderPrefix}_post_${year}_${month}`;
+
+            const zip = new JSZip();
+            calendarStatusText.textContent = 'ZIPファイルを作成中...';
+            calendarStatusText.style.display = 'block';
+
+            for (const imageData of calendarGeneratedImages) {
+                const base64Data = imageData.dataUrl.split(',')[1];
+                zip.file(`${folderName}/${imageData.filename}`, base64Data, { base64: true });
+            }
+
+            try {
+                const content = await zip.generateAsync({ type: 'blob' });
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `${folderName}.zip`;
+                link.click();
+
+                calendarStatusText.textContent = 'ダウンロード完了！';
+                setTimeout(() => {
+                    calendarStatusText.style.display = 'none';
+                }, 3000);
+
+            } catch (error) {
+                console.error('ZIP作成エラー:', error);
+                calendarStatusText.textContent = 'ZIPファイルの作成に失敗しました。';
+            }
+        }
+
+        // Upload calendar images to server
+        async function uploadCalendarImagesToServer() {
+            if (calendarGeneratedImages.length === 0) {
+                alert('先に画像を生成してください。');
+                return;
+            }
+
+            const password = document.getElementById('calendarUploadPassword').value.trim();
+            if (!password) {
+                alert('パスワードを入力してください。');
+                return;
+            }
+
+            const folderPrefix = document.getElementById('calendarFolderPrefix').value || 'if_juku';
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const folderName = `${folderPrefix}_post_${year}_${month}`;
+
+            calendarProgressBar.style.display = 'block';
+            calendarStatusText.style.display = 'block';
+            calendarStatusText.textContent = 'アップロード中...';
+            document.getElementById('calendarUploadResult').style.display = 'none';
+
+            const UPLOAD_API_URL = 'https://images.if-juku.net/upload.php';
+            const results = [];
+            const errors = [];
+
+            for (let i = 0; i < calendarGeneratedImages.length; i++) {
+                const imageData = calendarGeneratedImages[i];
+                const progress = ((i + 1) / calendarGeneratedImages.length) * 100;
+                calendarProgressFill.style.width = progress + '%';
+                calendarStatusText.textContent = `アップロード中... (${i + 1}/${calendarGeneratedImages.length})`;
+
+                try {
+                    // Convert data URL to blob
+                    const blob = await dataURLtoBlob(imageData.dataUrl);
+                    const file = new File([blob], imageData.filename, { type: 'image/png' });
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('path', `${folderName}/${imageData.filename}`);
+                    formData.append('password', password);
+
+                    const response = await fetch(UPLOAD_API_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        results.push({
+                            file: imageData.filename,
+                            url: result.url,
+                            title: imageData.entry.post.title
+                        });
+                    } else {
+                        errors.push({
+                            file: imageData.filename,
+                            error: result.error,
+                            title: imageData.entry.post.title
+                        });
+                    }
+                } catch (error) {
+                    errors.push({
+                        file: imageData.filename,
+                        error: error.message,
+                        title: imageData.entry.post.title
+                    });
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            calendarStatusText.textContent = `アップロード完了！ (成功: ${results.length}件, 失敗: ${errors.length}件)`;
+
+            // Display results
+            let resultHtml = '';
+
+            if (results.length > 0) {
+                resultHtml += '<h3 style="color: #28a745; margin-bottom: 10px;">✅ 成功 (' + results.length + '件)</h3>';
+                resultHtml += '<ul style="list-style: none; padding: 0; margin-bottom: 20px;">';
+                results.forEach(item => {
+                    resultHtml += `<li style="padding: 5px 0; color: #666; border-bottom: 1px solid #eee;">
+                        📄 ${item.file} - ${item.title}<br>
+                        <a href="${item.url}" target="_blank" style="color: #007bff; font-size: 0.9em;">${item.url}</a>
+                    </li>`;
+                });
+                resultHtml += '</ul>';
+            }
+
+            if (errors.length > 0) {
+                resultHtml += '<h3 style="color: #dc3545; margin-bottom: 10px;">❌ 失敗 (' + errors.length + '件)</h3>';
+                resultHtml += '<ul style="list-style: none; padding: 0;">';
+                errors.forEach(item => {
+                    resultHtml += `<li style="padding: 5px 0; color: #dc3545; border-bottom: 1px solid #eee;">
+                        📄 ${item.file} - ${item.title}<br>
+                        <span style="font-size: 0.9em;">エラー: ${item.error}</span>
+                    </li>`;
+                });
+                resultHtml += '</ul>';
+            }
+
+            document.getElementById('calendarUploadResultContent').innerHTML = resultHtml;
+            document.getElementById('calendarUploadResult').style.display = 'block';
+
+            setTimeout(() => {
+                calendarProgressBar.style.display = 'none';
+            }, 2000);
+        }
+
+        // Convert data URL to blob
+        function dataURLtoBlob(dataUrl) {
+            return new Promise((resolve) => {
+                const arr = dataUrl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                resolve(new Blob([u8arr], { type: mime }));
+            });
+        }
+
+        // ==================== END POST CALENDAR FUNCTIONALITY ====================
     </script>
 </body>
 </html>
