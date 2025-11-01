@@ -191,11 +191,44 @@ function parseCSVLine(line) {
 }
 
 /**
- * テキストを行分割（\\nで分割）
+ * テキストを行分割（\\nで分割）し、短い行を結合
+ * 3文字以下の行は次の行（または前の行）と結合して不要な改行を防ぐ
  */
 function splitText(text) {
   if (!text) return [];
-  return text.split('\\n');
+
+  const lines = text.split('\\n');
+  const optimizedLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const currentLine = lines[i].trim();
+
+    if (!currentLine) {
+      // 空行はスキップ
+      continue;
+    }
+
+    // 現在の行が3文字以下で、次の行がある場合
+    if (currentLine.length <= 3 && i < lines.length - 1) {
+      const nextLine = lines[i + 1].trim();
+      if (nextLine) {
+        // 次の行と結合
+        lines[i + 1] = currentLine + nextLine;
+        continue;
+      }
+    }
+
+    // 現在の行が3文字以下で、次の行がない場合（最後の行）
+    if (currentLine.length <= 3 && optimizedLines.length > 0) {
+      // 前の行と結合
+      optimizedLines[optimizedLines.length - 1] += currentLine;
+      continue;
+    }
+
+    optimizedLines.push(currentLine);
+  }
+
+  return optimizedLines;
 }
 
 /**

@@ -82,16 +82,35 @@ jobs:
         if: ${{ github.event.inputs.generate_images == 'true' || github.event_name == 'push' }}
         run: npm run compose-images
 
-      # 生成物をArtifactとしてアップロード
-      - name: 生成物をアップロード
+      # 生成物をArtifactとしてアップロード（個別に分けて選択可能に）
+      - name: カレンダーCSVをアップロード
         uses: actions/upload-artifact@v4
         with:
-          name: instagram-calendar-${{ github.run_number }}
-          path: |
-            output/calendar.csv
-            output/business-summary.txt
-            output/images/
-            output/composed/
+          name: calendar-csv
+          path: output/calendar.csv
+          retention-days: 90
+
+      - name: ビジネスサマリーをアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-summary
+          path: output/business-summary.txt
+          retention-days: 90
+
+      - name: AI生成画像をアップロード
+        if: ${{ github.event.inputs.generate_images == 'true' || github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-generated-images
+          path: output/images/
+          retention-days: 90
+
+      - name: 合成済み画像をアップロード
+        if: ${{ github.event.inputs.generate_images == 'true' || github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: composed-images
+          path: output/composed/
           retention-days: 90
 
       # 結果をコミット（オプション）
@@ -114,10 +133,16 @@ jobs:
       - name: 完了
         run: |
           echo "✅ Instagram投稿カレンダー生成完了"
-          if [ "${{ github.event.inputs.generate_images }}" == "true" ]; then
-            echo "🖼️  画像も自動生成されました"
-            echo "🎨 テキスト合成済み画像がimages.if-juku.netにアップロードされました"
-            echo "📋 Artifactから calendar.csv、images/、composed/ フォルダをダウンロードしてください"
-          else
-            echo "📋 Artifactから calendar.csv をダウンロードしてください"
+          echo ""
+          echo "📦 以下のArtifactから必要なものを選択してダウンロードできます:"
+          echo "   1️⃣ calendar-csv - 投稿カレンダー（CSV形式）"
+          echo "   2️⃣ business-summary - ビジネスサマリー"
+          if [ "${{ github.event.inputs.generate_images }}" == "true" ] || [ "${{ github.event_name }}" == "push" ]; then
+            echo "   3️⃣ ai-generated-images - AI生成画像（元画像）"
+            echo "   4️⃣ composed-images - 合成済み画像（テキスト入り、3:4サイズ）"
+            echo ""
+            echo "🌐 合成済み画像はサーバーにもアップロードされています:"
+            echo "   https://images.if-juku.net/if_juku_post_$(date '+%Y_%m')/"
           fi
+          echo ""
+          echo "💡 各Artifactは個別にダウンロード可能です（zipファイルとして）"
