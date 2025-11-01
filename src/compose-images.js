@@ -441,11 +441,15 @@ async function composeAndUploadImages() {
 
     // 現在の年月を取得（フォルダ名用）
     const now = new Date();
-    const folderName = `if_juku_post_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const folderName = `juku_post_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     let totalComposed = 0;
     let totalUploaded = 0;
     let totalFailed = 0;
+
+    // アップロードされた画像URLを記録（一括投稿CSV用）
+    const uploadedImageUrls = [];
+    const thanksMessageUrls = [];
 
     // 各日の画像を合成
     for (let dayIndex = 0; dayIndex < lines.length; dayIndex++) {
@@ -508,6 +512,9 @@ async function composeAndUploadImages() {
           console.log(`  ✅ アップロード完了: ${uploadedUrl}`);
           totalUploaded++;
 
+          // URLを記録
+          uploadedImageUrls.push(uploadedUrl);
+
         } catch (error) {
           console.error(`  ❌ エラー:`, error.message);
           totalFailed++;
@@ -542,6 +549,9 @@ async function composeAndUploadImages() {
           console.log(`  ✅ アップロード完了: ${uploadedUrl}`);
           totalUploaded++;
 
+          // サンクスメッセージURLを記録
+          thanksMessageUrls.push(uploadedUrl);
+
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`  ❌ ${file}のアップロードに失敗:`, error.message);
@@ -549,6 +559,54 @@ async function composeAndUploadImages() {
       }
     } else {
       console.log('  ℹ️  thanksmessageフォルダが見つかりません - スキップ');
+    }
+
+    // 一括投稿データ.CSV作成
+    console.log('\n📝 一括投稿データ.CSV作成中...');
+    const bulkPostCsvPath = join(__dirname, '..', 'output', '一括投稿データ.csv');
+
+    try {
+      // 投稿日数を計算（合成画像枚数 / 4）
+      const postsCount = Math.floor(uploadedImageUrls.length / 4);
+      console.log(`  📊 合成画像: ${uploadedImageUrls.length}枚 → ${postsCount}日分の投稿`);
+
+      if (postsCount === 0) {
+        console.log('  ⚠️  投稿データがありません - スキップ');
+      } else {
+        // CSVヘッダー
+        const csvLines = ['Date,Text,Link(s),Media URL(s)'];
+
+        // 各日の投稿データを作成
+        for (let i = 0; i < postsCount; i++) {
+          // 投稿日時（今日から順番に18:00で設定）
+          const postDate = new Date(now);
+          postDate.setDate(postDate.getDate() + i);
+          postDate.setHours(18, 0, 0, 0);
+          const dateStr = `${postDate.getFullYear()}-${String(postDate.getMonth() + 1).padStart(2, '0')}-${String(postDate.getDate()).padStart(2, '0')} 18:00`;
+
+          // カレンダーのM列（13列目）のテキストを取得
+          const calendarLine = lines[i];
+          const columns = parseCSVLine(calendarLine);
+          const postText = columns[12] || ''; // M列（0-indexed で12）
+
+          // この日の4枚の画像URL
+          const dayImageUrls = uploadedImageUrls.slice(i * 4, i * 4 + 4);
+
+          // サンクスメッセージURLを追加
+          const mediaUrls = [...dayImageUrls, ...thanksMessageUrls].join(',');
+
+          // CSV行を作成（テキストにカンマが含まれるのでダブルクォートで囲む）
+          const csvLine = `${dateStr},"${postText.replace(/"/g, '""')}",,"${mediaUrls}"`;
+          csvLines.push(csvLine);
+        }
+
+        // CSVファイルを保存
+        writeFileSync(bulkPostCsvPath, csvLines.join('\n'), 'utf-8');
+        console.log(`  ✅ 一括投稿データ.CSV作成完了: ${postsCount}日分`);
+        console.log(`  💾 保存先: ${bulkPostCsvPath}`);
+      }
+    } catch (error) {
+      console.error('  ❌ 一括投稿データ.CSV作成エラー:', error.message);
     }
 
     console.log('\n' + '='.repeat(60));

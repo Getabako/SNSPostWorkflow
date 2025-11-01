@@ -113,6 +113,14 @@ jobs:
           path: output/composed/
           retention-days: 90
 
+      - name: 一括投稿データ.CSVをアップロード
+        if: ${{ github.event.inputs.generate_images == 'true' || github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bulk-post-csv
+          path: output/一括投稿データ.csv
+          retention-days: 90
+
       # 結果をコミット（オプション）
       - name: 結果をコミット
         if: success()
@@ -140,9 +148,10 @@ jobs:
           if [ "${{ github.event.inputs.generate_images }}" == "true" ] || [ "${{ github.event_name }}" == "push" ]; then
             echo "   3️⃣ ai-generated-images - AI生成画像（元画像）"
             echo "   4️⃣ composed-images - 合成済み画像（テキスト入り、3:4サイズ）"
+            echo "   5️⃣ bulk-post-csv - 一括投稿データ.CSV（Instagram予約投稿用）"
             echo ""
             echo "🌐 合成済み画像はサーバーにもアップロードされています:"
-            echo "   https://images.if-juku.net/if_juku_post_$(date '+%Y_%m')/"
+            echo "   https://images.if-juku.net/juku_post_$(date '+%Y_%m')/"
           fi
           echo ""
           echo "💡 各Artifactは個別にダウンロード可能です（zipファイルとして）"
