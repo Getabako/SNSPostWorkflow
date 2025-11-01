@@ -74,19 +74,56 @@ function detectCharacterInPrompt(prompt) {
 }
 
 /**
- * キャラクター画像を読み込んでBase64に変換
+ * キャラクター画像を全て読み込んでBase64配列に変換
+ * フォルダ内の全ての.png/.jpg/.jpeg画像を読み込む
+ * @returns {Array} [{ data: base64String, mimeType: string }, ...] または null
  */
-function loadCharacterImage(characterName) {
-  const imagePath = join(__dirname, '..', 'character', characterName, `${characterName}.png`);
+function loadCharacterImages(characterName) {
+  const characterDir = join(__dirname, '..', 'character', characterName);
 
-  if (!existsSync(imagePath)) {
-    console.log(`  ⚠️  キャラクター画像が見つかりません: ${imagePath}`);
+  if (!existsSync(characterDir)) {
+    console.log(`  ⚠️  キャラクターフォルダが見つかりません: ${characterDir}`);
     return null;
   }
 
   try {
-    const imageBuffer = readFileSync(imagePath);
-    return imageBuffer.toString('base64');
+    // フォルダ内の全ファイルを取得
+    const files = readdirSync(characterDir);
+
+    // 画像ファイルのみをフィルタ（.png, .jpg, .jpeg）
+    const imageFiles = files.filter(file => {
+      const ext = file.toLowerCase();
+      return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg');
+    });
+
+    if (imageFiles.length === 0) {
+      console.log(`  ⚠️  キャラクター画像が見つかりません: ${characterDir}`);
+      return null;
+    }
+
+    // 全画像を読み込んでBase64に変換
+    const images = [];
+    for (const file of imageFiles) {
+      const imagePath = join(characterDir, file);
+      const imageBuffer = readFileSync(imagePath);
+      const base64Data = imageBuffer.toString('base64');
+
+      // MIMEタイプを判定
+      let mimeType = 'image/png';
+      if (file.toLowerCase().endsWith('.jpg') || file.toLowerCase().endsWith('.jpeg')) {
+        mimeType = 'image/jpeg';
+      }
+
+      images.push({
+        data: base64Data,
+        mimeType: mimeType,
+        filename: file
+      });
+    }
+
+    console.log(`  📸 ${images.length}枚の参照画像を読み込みました: ${imageFiles.join(', ')}`);
+    return images;
+
   } catch (error) {
     console.error(`  ❌ キャラクター画像の読み込みに失敗: ${error.message}`);
     return null;
@@ -109,21 +146,23 @@ async function generateImage(apiKey, prompt, index, characterName = null) {
 
     // キャラクター名が指定されている場合、image-to-imageで生成
     if (characterName) {
-      const characterImageBase64 = loadCharacterImage(characterName);
+      const characterImages = loadCharacterImages(characterName);
 
-      if (characterImageBase64) {
-        console.log(`  📸 Image-to-Image モード: ${characterName}を使用`);
+      if (characterImages && characterImages.length > 0) {
+        console.log(`  📸 Image-to-Image モード: ${characterName}を使用（${characterImages.length}枚の参照画像）`);
 
-        // キャラクター画像をパーツに追加
-        parts.push({
-          inlineData: {
-            mimeType: 'image/png',
-            data: characterImageBase64
-          }
-        });
+        // 全てのキャラクター画像をパーツに追加
+        for (const image of characterImages) {
+          parts.push({
+            inlineData: {
+              mimeType: image.mimeType,
+              data: image.data
+            }
+          });
+        }
 
         // プロンプトを強化（キャラクターの特徴を維持）
-        const enhancedPrompt = `CRITICAL: Keep the person EXACTLY as shown in the reference image. DO NOT change their face, facial features, hairstyle, hair color, skin tone, or clothing style. The person's identity and appearance must remain 100% identical. Only change the background, setting, and pose to match this scene: ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT in the image, use blank signs and clean surfaces without any text or characters.`;
+        const enhancedPrompt = `CRITICAL: Keep the person EXACTLY as shown in the reference images. DO NOT change their face, facial features, hairstyle, hair color, skin tone, or clothing style. The person's identity and appearance must remain 100% identical across all reference images. Only change the background, setting, and pose to match this scene: ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT in the image, use blank signs and clean surfaces without any text or characters.`;
         parts.push({ text: enhancedPrompt });
       } else {
         // キャラクター画像が見つからない場合は通常のtext-to-imageにフォールバック
