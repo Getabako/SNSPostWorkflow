@@ -123,7 +123,7 @@ async function generateImage(apiKey, prompt, index, characterName = null) {
         });
 
         // プロンプトを強化（キャラクターの特徴を維持）
-        const enhancedPrompt = `Maintain the exact facial features, appearance, and characteristics of the person in the reference image. ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT, blank signs, clean surfaces without any text or characters`;
+        const enhancedPrompt = `CRITICAL: Keep the person EXACTLY as shown in the reference image. DO NOT change their face, facial features, hairstyle, hair color, skin tone, or clothing style. The person's identity and appearance must remain 100% identical. Only change the background, setting, and pose to match this scene: ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT in the image, use blank signs and clean surfaces without any text or characters.`;
         parts.push({ text: enhancedPrompt });
       } else {
         // キャラクター画像が見つからない場合は通常のtext-to-imageにフォールバック
@@ -144,6 +144,7 @@ async function generateImage(apiKey, prompt, index, characterName = null) {
       }],
       generationConfig: {
         responseModalities: ["image"],
+        temperature: characterName ? 0.4 : 1.0,  // キャラクター時は低温度で忠実に再現
         imageConfig: {
           aspectRatio: "1:1"
         }
