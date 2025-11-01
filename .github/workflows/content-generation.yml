@@ -4,6 +4,11 @@ on:
   # 手動実行を許可
   workflow_dispatch:
     inputs:
+      calendar_days:
+        description: '生成する投稿日数（デフォルト: 30日）'
+        required: false
+        type: number
+        default: 30
       generate_images:
         description: '画像も自動生成する（Gemini API使用）'
         required: false
@@ -54,6 +59,7 @@ jobs:
       - name: 投稿カレンダーを生成
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CALENDAR_DAYS: ${{ github.event.inputs.calendar_days || '30' }}
         run: npm run generate-calendar
 
       # 画像自動生成（オプション）
