@@ -48,51 +48,85 @@ let lastContentColor = null;
  */
 function registerFonts() {
   try {
-    // システムフォントのパスを検索
-    const fontPaths = [
-      // Ubuntu/Debian
+    console.log('🔍 フォント検索中...');
+
+    // Noto Sans CJK用のパス（タイトル用）
+    const notoPaths = [
       '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',
       '/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc',
-      '/usr/share/fonts/truetype/mplus/mplus-2c-bold.ttf',
+      '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+      '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
       // macOS
       '/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc',
-      '/Library/Fonts/BIZ UDGothic Bold.ttf',
-      // 汎用
-      '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
+      '/Library/Fonts/BIZ UDGothic Bold.ttf'
     ];
 
-    let fontsRegistered = 0;
+    // M+ フォント用のパス（コンテンツ用）
+    const mplusPaths = [
+      '/usr/share/fonts/truetype/mplus/mplus-2c-bold.ttf',
+      '/usr/share/fonts/truetype/mplus/mplus-2c-regular.ttf',
+      '/usr/share/fonts/truetype/mplus/mplus-1c-bold.ttf',
+      '/usr/share/fonts/truetype/mplus/mplus-1c-regular.ttf'
+    ];
 
-    // BIZ UDゴシック用
-    for (const path of fontPaths) {
+    let titleFontRegistered = false;
+    let contentFontRegistered = false;
+
+    // タイトルフォント登録
+    for (const path of notoPaths) {
       if (existsSync(path)) {
         try {
-          GlobalFonts.registerFromPath(path, 'BIZ UDGothic');
-          console.log(`✅ フォント登録成功: ${path} as BIZ UDGothic`);
-          fontsRegistered++;
+          GlobalFonts.registerFromPath(path, 'TitleFont');
+          console.log(`✅ タイトルフォント登録成功: ${path}`);
+          titleFontRegistered = true;
           break;
         } catch (e) {
-          // 次のパスを試す
+          console.warn(`⚠️  フォント登録失敗: ${path} - ${e.message}`);
         }
       }
     }
 
-    // M PLUS 2用
-    for (const path of fontPaths) {
+    // コンテンツフォント登録
+    for (const path of mplusPaths) {
       if (existsSync(path)) {
         try {
-          GlobalFonts.registerFromPath(path, 'M PLUS 2');
-          console.log(`✅ フォント登録成功: ${path} as M PLUS 2`);
-          fontsRegistered++;
+          GlobalFonts.registerFromPath(path, 'ContentFont');
+          console.log(`✅ コンテンツフォント登録成功: ${path}`);
+          contentFontRegistered = true;
           break;
         } catch (e) {
-          // 次のパスを試す
+          console.warn(`⚠️  フォント登録失敗: ${path} - ${e.message}`);
         }
       }
     }
 
-    if (fontsRegistered === 0) {
-      console.warn('⚠️  システムフォントが見つかりません。デフォルトフォントを使用します。');
+    // フォールバック: 両方とも同じフォントを使用
+    if (!titleFontRegistered || !contentFontRegistered) {
+      const fallbackPaths = [...notoPaths, ...mplusPaths];
+      for (const path of fallbackPaths) {
+        if (existsSync(path)) {
+          try {
+            if (!titleFontRegistered) {
+              GlobalFonts.registerFromPath(path, 'TitleFont');
+              console.log(`✅ タイトルフォント（フォールバック）登録成功: ${path}`);
+              titleFontRegistered = true;
+            }
+            if (!contentFontRegistered) {
+              GlobalFonts.registerFromPath(path, 'ContentFont');
+              console.log(`✅ コンテンツフォント（フォールバック）登録成功: ${path}`);
+              contentFontRegistered = true;
+            }
+            if (titleFontRegistered && contentFontRegistered) break;
+          } catch (e) {
+            // 次を試す
+          }
+        }
+      }
+    }
+
+    if (!titleFontRegistered || !contentFontRegistered) {
+      console.error('❌ 日本語フォントが見つかりません！');
+      console.error('   fonts-noto-cjkとfonts-mplusがインストールされているか確認してください。');
     }
 
     // 登録されているフォント一覧を表示
@@ -280,7 +314,7 @@ async function composeImage(imagePath, titleText, contentText) {
     drawText(
       ctx,
       titleText,
-      'BIZ UDGothic',
+      'TitleFont',
       120,
       titleColor,
       'center',
@@ -297,7 +331,7 @@ async function composeImage(imagePath, titleText, contentText) {
     drawText(
       ctx,
       contentText,
-      'M PLUS 2',
+      'ContentFont',
       90,
       contentColor,
       'center',

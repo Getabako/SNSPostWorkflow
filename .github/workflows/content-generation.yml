@@ -51,6 +51,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y fonts-noto-cjk fonts-mplus
+          echo "📝 インストールされたフォント一覧:"
+          fc-list | grep -i "noto\|mplus" | head -20
 
       # 出力ディレクトリの作成
       - name: 出力ディレクトリを作成
