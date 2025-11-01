@@ -59,19 +59,19 @@ jobs:
       - name: 投稿カレンダーを生成
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CALENDAR_DAYS: ${{ github.event.inputs.calendar_days || '30' }}
+          CALENDAR_DAYS: ${{ github.event.inputs.calendar_days || '3' }}
         run: npm run generate-calendar
 
       # 画像自動生成（オプション）
       - name: 画像を自動生成
-        if: ${{ github.event.inputs.generate_images == 'true' }}
+        if: ${{ github.event.inputs.generate_images == 'true' || github.event_name == 'push' }}
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run generate-images
 
       # 画像合成とアップロード（オプション）
       - name: 画像にテキストを合成してアップロード
-        if: ${{ github.event.inputs.generate_images == 'true' }}
+        if: ${{ github.event.inputs.generate_images == 'true' || github.event_name == 'push' }}
         run: npm run compose-images
 
       # 生成物をArtifactとしてアップロード
