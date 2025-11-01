@@ -518,6 +518,39 @@ async function composeAndUploadImages() {
       }
     }
 
+    // サンクスメッセージ画像をアップロード
+    console.log('\n📮 サンクスメッセージ画像をアップロード中...');
+    const thanksMessageDir = join(__dirname, '..', 'thanksmessage');
+
+    if (existsSync(thanksMessageDir)) {
+      const thanksFiles = readdirSync(thanksMessageDir).filter(file =>
+        file.toLowerCase().endsWith('.png') ||
+        file.toLowerCase().endsWith('.jpg') ||
+        file.toLowerCase().endsWith('.jpeg')
+      );
+
+      for (const file of thanksFiles) {
+        try {
+          const thanksImagePath = join(thanksMessageDir, file);
+          const thanksImageBuffer = readFileSync(thanksImagePath);
+
+          // サーバーにアップロード（同じフォルダに）
+          const uploadPath = `${folderName}/${file}`;
+          console.log(`  ⬆️  ${file}をアップロード中...`);
+
+          const uploadedUrl = await uploadImage(thanksImageBuffer, uploadPath);
+          console.log(`  ✅ アップロード完了: ${uploadedUrl}`);
+          totalUploaded++;
+
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`  ❌ ${file}のアップロードに失敗:`, error.message);
+        }
+      }
+    } else {
+      console.log('  ℹ️  thanksmessageフォルダが見つかりません - スキップ');
+    }
+
     console.log('\n' + '='.repeat(60));
     console.log(`✅ 画像合成・アップロード完了`);
     console.log(`📊 合成成功: ${totalComposed}枚`);
