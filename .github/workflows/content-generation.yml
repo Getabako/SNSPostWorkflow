@@ -46,6 +46,12 @@ jobs:
       - name: 依存関係をインストール
         run: npm ci
 
+      # 日本語フォントのインストール
+      - name: 日本語フォントをインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk fonts-mplus
+
       # 出力ディレクトリの作成
       - name: 出力ディレクトリを作成
         run: |
@@ -59,7 +65,7 @@ jobs:
       - name: 投稿カレンダーを生成
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CALENDAR_DAYS: ${{ github.event.inputs.calendar_days || '3' }}
+          CALENDAR_DAYS: ${{ github.event.inputs.calendar_days || '1' }}
         run: npm run generate-calendar
 
       # 画像自動生成（オプション）

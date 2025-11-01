@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
@@ -14,6 +14,116 @@ const __dirname = dirname(__filename);
 // アップロード設定
 const UPLOAD_URL = 'https://images.if-juku.net/upload.php';
 const UPLOAD_PASSWORD = 'IFjuku19841121';
+
+// カラーパレット（20色）
+const COLOR_PALETTE = [
+  '#FF6B6B', // 赤
+  '#4ECDC4', // ターコイズ
+  '#45B7D1', // 青
+  '#FFA07A', // サーモン
+  '#98D8C8', // ミント
+  '#FFD93D', // 黄色
+  '#6BCF7F', // 緑
+  '#C7B3FF', // 薄紫
+  '#FF8FAB', // ピンク
+  '#95E1D3', // 水色
+  '#F38181', // コーラル
+  '#AA96DA', // 紫
+  '#FCBAD3', // ローズ
+  '#A8E6CF', // ライムグリーン
+  '#FFD3B6', // ピーチ
+  '#FFAAA5', // ライトコーラル
+  '#FF8B94', // ローズレッド
+  '#A8D8EA', // スカイブルー
+  '#AA7DCE', // ラベンダー
+  '#FFC8DD'  // ライトピンク
+];
+
+// 前回使用した色を記憶
+let lastTitleColor = null;
+let lastContentColor = null;
+
+/**
+ * フォントを登録
+ */
+function registerFonts() {
+  try {
+    // システムフォントのパスを検索
+    const fontPaths = [
+      // Ubuntu/Debian
+      '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',
+      '/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc',
+      '/usr/share/fonts/truetype/mplus/mplus-2c-bold.ttf',
+      // macOS
+      '/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc',
+      '/Library/Fonts/BIZ UDGothic Bold.ttf',
+      // 汎用
+      '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
+    ];
+
+    let fontsRegistered = 0;
+
+    // BIZ UDゴシック用
+    for (const path of fontPaths) {
+      if (existsSync(path)) {
+        try {
+          GlobalFonts.registerFromPath(path, 'BIZ UDGothic');
+          console.log(`✅ フォント登録成功: ${path} as BIZ UDGothic`);
+          fontsRegistered++;
+          break;
+        } catch (e) {
+          // 次のパスを試す
+        }
+      }
+    }
+
+    // M PLUS 2用
+    for (const path of fontPaths) {
+      if (existsSync(path)) {
+        try {
+          GlobalFonts.registerFromPath(path, 'M PLUS 2');
+          console.log(`✅ フォント登録成功: ${path} as M PLUS 2`);
+          fontsRegistered++;
+          break;
+        } catch (e) {
+          // 次のパスを試す
+        }
+      }
+    }
+
+    if (fontsRegistered === 0) {
+      console.warn('⚠️  システムフォントが見つかりません。デフォルトフォントを使用します。');
+    }
+
+    // 登録されているフォント一覧を表示
+    const families = GlobalFonts.families;
+    console.log(`📝 登録フォント: ${families.length > 0 ? families.join(', ') : 'なし'}`);
+
+  } catch (error) {
+    console.error('❌ フォント登録エラー:', error.message);
+  }
+}
+
+/**
+ * ランダムな色を選択（前回と異なる色）
+ */
+function getRandomColor(isTitle) {
+  let color;
+  const lastColor = isTitle ? lastTitleColor : lastContentColor;
+  const otherLastColor = isTitle ? lastContentColor : lastTitleColor;
+
+  do {
+    color = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+  } while (color === lastColor || color === otherLastColor);
+
+  if (isTitle) {
+    lastTitleColor = color;
+  } else {
+    lastContentColor = color;
+  }
+
+  return color;
+}
 
 /**
  * CSV行をパース（クォート対応）
@@ -57,7 +167,7 @@ function splitText(text) {
 /**
  * テキストをCanvas上に描画
  */
-function drawText(ctx, text, font, fontSize, alignment, effect, posY, canvasWidth, canvasHeight) {
+function drawText(ctx, text, font, fontSize, color, alignment, effect, posY, canvasWidth, canvasHeight) {
   if (!text || !text.trim()) return;
 
   const textLines = splitText(text);
@@ -105,12 +215,12 @@ function drawText(ctx, text, font, fontSize, alignment, effect, posY, canvasWidt
       ctx.lineWidth = 12;
       ctx.strokeText(line, x, lineY);
 
-      // メインテキスト（白）
-      ctx.fillStyle = '#ffffff';
+      // メインテキスト（カラー）
+      ctx.fillStyle = color;
       ctx.fillText(line, x, lineY);
     } else {
       // エフェクトなし
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = color;
       ctx.fillText(line, x, lineY);
     }
 
@@ -160,6 +270,10 @@ async function composeImage(imagePath, titleText, contentText) {
 
   ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, drawX, drawY, drawWidth, drawHeight);
 
+  // ランダムな色を取得（タイトルとコンテンツで異なる色）
+  const titleColor = getRandomColor(true);
+  const contentColor = getRandomColor(false);
+
   // タイトルを描画（上部10%固定）
   if (titleText && titleText.trim()) {
     const titlePosY = canvasHeight * 0.1;
@@ -168,6 +282,7 @@ async function composeImage(imagePath, titleText, contentText) {
       titleText,
       'BIZ UDGothic',
       120,
+      titleColor,
       'center',
       'outline',
       titlePosY,
@@ -184,6 +299,7 @@ async function composeImage(imagePath, titleText, contentText) {
       contentText,
       'M PLUS 2',
       90,
+      contentColor,
       'center',
       'outline',
       contentPosY,
@@ -228,6 +344,10 @@ async function uploadImage(imageBuffer, path) {
 async function composeAndUploadImages() {
   try {
     console.log('🎨 画像合成とアップロードを開始...\n');
+
+    // フォント登録
+    registerFonts();
+    console.log();
 
     // カレンダーCSVを読み込む
     const calendarPath = join(__dirname, '..', 'output', 'calendar.csv');
