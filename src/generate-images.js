@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
@@ -40,18 +40,107 @@ function parseCSVLine(line) {
 }
 
 /**
- * Gemini APIで画像を生成（fetchを直接使用）
+ * キャラクターフォルダから全キャラクター名を取得
  */
-async function generateImage(apiKey, prompt, index) {
+function getCharacterNames() {
+  const characterDir = join(__dirname, '..', 'character');
+
+  if (!existsSync(characterDir)) {
+    console.log('⚠️  キャラクターフォルダが見つかりません');
+    return [];
+  }
+
+  const folders = readdirSync(characterDir, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+
+  return folders;
+}
+
+/**
+ * プロンプト内にキャラクター名が含まれているか検出
+ */
+function detectCharacterInPrompt(prompt) {
+  const characters = getCharacterNames();
+
+  for (const character of characters) {
+    if (prompt.includes(character)) {
+      console.log(`  🎭 キャラクター検出: ${character}`);
+      return character;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * キャラクター画像を読み込んでBase64に変換
+ */
+function loadCharacterImage(characterName) {
+  const imagePath = join(__dirname, '..', 'character', characterName, `${characterName}.png`);
+
+  if (!existsSync(imagePath)) {
+    console.log(`  ⚠️  キャラクター画像が見つかりません: ${imagePath}`);
+    return null;
+  }
+
+  try {
+    const imageBuffer = readFileSync(imagePath);
+    return imageBuffer.toString('base64');
+  } catch (error) {
+    console.error(`  ❌ キャラクター画像の読み込みに失敗: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Gemini APIで画像を生成（fetchを直接使用）
+ * @param {string} apiKey - Gemini API key
+ * @param {string} prompt - 画像生成プロンプト
+ * @param {number} index - 画像インデックス
+ * @param {string|null} characterName - キャラクター名（image-to-imageの場合）
+ */
+async function generateImage(apiKey, prompt, index, characterName = null) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
 
-    // プロンプトを強化（日本人、テキストなしなど）
-    const enhancedPrompt = `Modern Japanese people, ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT, blank signs, clean surfaces without any text or characters`;
+    // パーツ配列を準備
+    const parts = [];
+
+    // キャラクター名が指定されている場合、image-to-imageで生成
+    if (characterName) {
+      const characterImageBase64 = loadCharacterImage(characterName);
+
+      if (characterImageBase64) {
+        console.log(`  📸 Image-to-Image モード: ${characterName}を使用`);
+
+        // キャラクター画像をパーツに追加
+        parts.push({
+          inlineData: {
+            mimeType: 'image/png',
+            data: characterImageBase64
+          }
+        });
+
+        // プロンプトを強化（キャラクターの特徴を維持）
+        const enhancedPrompt = `Maintain the exact facial features, appearance, and characteristics of the person in the reference image. ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT, blank signs, clean surfaces without any text or characters`;
+        parts.push({ text: enhancedPrompt });
+      } else {
+        // キャラクター画像が見つからない場合は通常のtext-to-imageにフォールバック
+        console.log(`  ⚠️  キャラクター画像が見つからないため、text-to-imageで生成します`);
+        const enhancedPrompt = `Modern Japanese people, ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT, blank signs, clean surfaces without any text or characters`;
+        parts.push({ text: enhancedPrompt });
+      }
+    } else {
+      // キャラクターなし - text-to-imageで生成
+      console.log(`  🎨 Text-to-Image モード`);
+      const enhancedPrompt = `Modern Japanese people, ${prompt}. IMPORTANT: NO TEXT, NO LETTERS, NO WORDS, NO WRITING, NO SIGNS WITH TEXT, blank signs, clean surfaces without any text or characters`;
+      parts.push({ text: enhancedPrompt });
+    }
 
     const requestBody = {
       contents: [{
-        parts: [{ text: enhancedPrompt }]
+        parts: parts
       }],
       generationConfig: {
         responseModalities: ["image"],
@@ -157,8 +246,11 @@ async function generateImagesFromCalendar() {
         console.log(`  🎨 ${name}を生成中...`);
         console.log(`     プロンプト: ${prompt.substring(0, 60)}...`);
 
-        // 画像生成
-        const imageBuffer = await generateImage(process.env.GEMINI_API_KEY, prompt, i + 1);
+        // キャラクター検出
+        const characterName = detectCharacterInPrompt(prompt);
+
+        // 画像生成（キャラクター名を渡す）
+        const imageBuffer = await generateImage(process.env.GEMINI_API_KEY, prompt, i + 1, characterName);
 
         if (imageBuffer) {
           // ファイル名: day01_01.png, day01_02.png, ...
