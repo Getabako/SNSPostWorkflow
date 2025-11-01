@@ -69,6 +69,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run generate-images
 
+      # 画像合成とアップロード（オプション）
+      - name: 画像にテキストを合成してアップロード
+        if: ${{ github.event.inputs.generate_images == 'true' }}
+        run: npm run compose-images
+
       # 生成物をArtifactとしてアップロード
       - name: 生成物をアップロード
         uses: actions/upload-artifact@v4
@@ -78,6 +83,7 @@ jobs:
             output/calendar.csv
             output/business-summary.txt
             output/images/
+            output/composed/
           retention-days: 90
 
       # 結果をコミット（オプション）
@@ -102,7 +108,8 @@ jobs:
           echo "✅ Instagram投稿カレンダー生成完了"
           if [ "${{ github.event.inputs.generate_images }}" == "true" ]; then
             echo "🖼️  画像も自動生成されました"
-            echo "📋 Artifactから calendar.csv と images/ フォルダをダウンロードしてください"
+            echo "🎨 テキスト合成済み画像がimages.if-juku.netにアップロードされました"
+            echo "📋 Artifactから calendar.csv、images/、composed/ フォルダをダウンロードしてください"
           else
             echo "📋 Artifactから calendar.csv をダウンロードしてください"
           fi
