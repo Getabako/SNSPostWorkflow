@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -127,7 +127,10 @@ async function generateCharacterCSVs() {
     // characterフォルダのパス
     const characterDir = join(__dirname, '..', 'character');
     if (!existsSync(characterDir)) {
-      throw new Error('characterフォルダが見つかりません。');
+      mkdirSync(characterDir, { recursive: true });
+      console.log('📁 characterフォルダを作成しました\n');
+      console.log('⚠️  characterフォルダ内にサブフォルダと画像を配置してから再度実行してください。');
+      return;
     }
 
     // サブフォルダをリストアップ

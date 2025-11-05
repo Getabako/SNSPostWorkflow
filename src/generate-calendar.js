@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -133,6 +133,8 @@ function loadAllImageRules() {
 function loadExistingCalendars() {
   const calendarDir = join(__dirname, '..', 'calender');
   if (!existsSync(calendarDir)) {
+    mkdirSync(calendarDir, { recursive: true });
+    console.log('📁 calenderフォルダを作成しました');
     return [];
   }
 
@@ -402,6 +404,9 @@ ${calendarDays > 3 ? '...（中略）...\n' + calendarDays + '日目の13列デ�
 
     // calenderフォルダに保存
     const calendarDir = join(__dirname, '..', 'calender');
+    if (!existsSync(calendarDir)) {
+      mkdirSync(calendarDir, { recursive: true });
+    }
     const calendarPath = join(calendarDir, `calendar_${timestamp}.csv`);
     writeFileSync(calendarPath, calendarCSV, 'utf-8');
 

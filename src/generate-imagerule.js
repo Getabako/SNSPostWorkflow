@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -125,6 +125,10 @@ ${businessSummary || htmlContent}
 
     // imageruleフォルダに保存
     const imageruleDir = join(__dirname, '..', 'imagerule');
+    if (!existsSync(imageruleDir)) {
+      mkdirSync(imageruleDir, { recursive: true });
+      console.log('📁 imageruleフォルダを作成しました\n');
+    }
     const rulePath = join(imageruleDir, `${businessName}.csv`);
 
     writeFileSync(rulePath, fullCSV, 'utf-8');
