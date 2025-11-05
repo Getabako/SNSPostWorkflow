@@ -529,6 +529,12 @@ async function composeAndUploadImages() {
     console.log('\n📮 サンクスメッセージ画像をアップロード中...');
     const thanksMessageDir = join(__dirname, '..', 'thanksmessage');
 
+    // thanksmessageフォルダが存在しない場合は作成
+    if (!existsSync(thanksMessageDir)) {
+      mkdirSync(thanksMessageDir, { recursive: true });
+      console.log('  📁 thanksmessageフォルダを作成しました');
+    }
+
     if (existsSync(thanksMessageDir)) {
       const thanksFiles = readdirSync(thanksMessageDir).filter(file =>
         file.toLowerCase().endsWith('.png') ||
