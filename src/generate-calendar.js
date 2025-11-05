@@ -128,6 +128,47 @@ function loadAllImageRules() {
 }
 
 /**
+ * 既存のカレンダーを読み込む
+ */
+function loadExistingCalendars() {
+  const calendarDir = join(__dirname, '..', 'calender');
+  if (!existsSync(calendarDir)) {
+    return [];
+  }
+
+  const files = readdirSync(calendarDir)
+    .filter(file => file.startsWith('calendar_') && file.endsWith('.csv'))
+    .sort()
+    .reverse(); // 最新のファイルを先に
+
+  const existingPosts = [];
+
+  for (const file of files) {
+    try {
+      const filePath = join(calendarDir, file);
+      const content = readFileSync(filePath, 'utf-8');
+      const lines = content.split('\n').filter(line => line.trim());
+
+      lines.forEach((line, index) => {
+        const fields = parseCSVLine(line);
+        if (fields.length >= 13) {
+          existingPosts.push({
+            file: file,
+            day: index + 1,
+            coverImage: fields[0],
+            postText: fields[12]
+          });
+        }
+      });
+    } catch (error) {
+      console.warn(`⚠️  ${file}の読み込みをスキップ:`, error.message);
+    }
+  }
+
+  return existingPosts;
+}
+
+/**
  * AIで投稿カレンダー（CSV）を生成
  */
 async function generateCalendar() {
@@ -142,6 +183,10 @@ async function generateCalendar() {
     // 投稿数の設定（環境変数から取得、デフォルトは30日）
     const calendarDays = parseInt(process.env.CALENDAR_DAYS) || 30;
     console.log(`📆 生成する投稿数: ${calendarDays}日分\n`);
+
+    // 既存のカレンダーを読み込む
+    const existingPosts = loadExistingCalendars();
+    console.log(`📚 既存のカレンダーから${existingPosts.length}件の投稿を読み込みました\n`);
 
     // 事業情報の読み込み
     const businessSummaryPath = join(__dirname, '..', 'output', 'business-summary.txt');
@@ -205,12 +250,33 @@ async function generateCalendar() {
 - 追加情報: ${rule.additional}
 `).join('\n');
 
+    // 既存投稿情報をプロンプト用にフォーマット
+    let existingPostsSection = '';
+    if (existingPosts.length > 0) {
+      const recentPosts = existingPosts.slice(0, 30); // 最新30件
+      existingPostsSection = `
+# 既存の投稿内容（重複を避けるための参考情報）
+以下は、既に作成された投稿の内容です。これらと似た内容や重複するテーマを避けて、新しいユニークな投稿を生成してください。
+
+${recentPosts.map((post, idx) => `
+## 既存投稿${idx + 1}
+- ファイル: ${post.file}
+- 表紙画像: ${post.coverImage.substring(0, 100)}...
+- 投稿テキスト: ${post.postText.substring(0, 150)}...
+`).join('\n')}
+
+**重要: 上記の既存投稿と内容が重複しないよう、新しい視点やテーマで投稿を作成してください。**
+`;
+    }
+
     // カレンダー生成用プロンプト
     const prompt = `
 あなたはInstagramマーケティングの専門家です。以下の情報をもとに、${calendarDays}日分のInstagram投稿カレンダー（カルーセル形式）を作成してください。
 
 # 事業情報
 ${businessSummary}
+
+${existingPostsSection}
 
 # キャラクター設定（登場人物の一貫性）
 以下の${characters.length}人のキャラクターが利用可能です。投稿内容に応じて適切なキャラクターを選んで使用してください。複数人を1つの投稿に登場させることも可能です。
@@ -330,12 +396,22 @@ ${calendarDays > 3 ? '...（中略）...\n' + calendarDays + '日目の13列デ�
     // コードブロックのマークダウンを削除
     calendarCSV = calendarCSV.replace(/```csv\n/g, '').replace(/```\n/g, '').replace(/```/g, '');
 
-    // CSVファイルとして保存
+    // タイムスタンプを生成
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+
+    // calenderフォルダに保存
+    const calendarDir = join(__dirname, '..', 'calender');
+    const calendarPath = join(calendarDir, `calendar_${timestamp}.csv`);
+    writeFileSync(calendarPath, calendarCSV, 'utf-8');
+
+    // outputフォルダにも保存（後方互換性のため）
     const csvPath = join(__dirname, '..', 'output', 'calendar.csv');
     writeFileSync(csvPath, calendarCSV, 'utf-8');
 
     console.log('✅ カレンダーCSVを生成しました');
-    console.log(`💾 保存先: ${csvPath}\n`);
+    console.log(`💾 保存先（メイン）: ${calendarPath}`);
+    console.log(`💾 保存先（バックアップ）: ${csvPath}\n`);
 
     // CSVをパースして検証
     const lines = calendarCSV.split('\n').filter(line => line.trim());
